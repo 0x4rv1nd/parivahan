@@ -1,7 +1,5 @@
 import mongoose from 'mongoose'
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parivahan-rto'
-
 declare global {
   // eslint-disable-next-line no-var
   var _mongooseConn: Promise<typeof mongoose> | null
@@ -11,7 +9,14 @@ let cached = global._mongooseConn
 
 export async function connectDb(): Promise<typeof mongoose> {
   if (cached) return cached
-  cached = mongoose.connect(MONGODB_URI, { bufferCommands: false })
+  // Read the URI lazily so an in-memory MongoDB (set after import, e.g. start())
+  // is picked up instead of a stale import-time default.
+  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/parivahan-rto'
+  cached = mongoose.connect(uri, { bufferCommands: false }).catch((err) => {
+    cached = null
+    global._mongooseConn = null
+    throw err
+  })
   global._mongooseConn = cached
   return cached
 }

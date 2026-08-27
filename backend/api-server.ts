@@ -607,8 +607,9 @@ app.get('/api/admin/dashboard', async (req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 async function start() {
-  // In dev: spin up an in-memory MongoDB so no local install is required
-  if (process.env.NODE_ENV !== 'production') {
+  // If no MONGODB_URI is provided (local dev, or hosted demo on Render without a DB),
+  // spin up an in-memory MongoDB and seed mock data so the demo runs with zero config.
+  if (!process.env.MONGODB_URI) {
     const { MongoMemoryServer } = await import('mongodb-memory-server')
     const mongod = await MongoMemoryServer.create()
     process.env.MONGODB_URI = mongod.getUri('parivahan-rto')

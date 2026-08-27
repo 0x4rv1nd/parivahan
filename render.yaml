@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: parivahan-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      - key: FRONTEND_URL
+        value: https://frontend-dusky-alpha-59.vercel.app
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: z-ai/glm-5.3-flash
+      - key: MONGODB_URI
+        sync: false
+        comment: Optional. Leave blank to run the in-memory MongoDB demo fallback.
