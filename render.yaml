@@ -4,7 +4,7 @@ services:
     runtime: node
     rootDir: backend
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install --ignore-scripts
     startCommand: npm run start
     healthCheckPath: /health
     autoDeploy: true
@@ -23,4 +23,3 @@ services:
         value: z-ai/glm-5.3-flash
       - key: MONGODB_URI
         sync: false
-        comment: Optional. Leave blank to run the in-memory MongoDB demo fallback.
