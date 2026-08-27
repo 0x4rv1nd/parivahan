@@ -11,6 +11,7 @@ export async function backendFetch<T = unknown>(path: string): Promise<T | null>
     const res = await fetch(`${BACKEND_URL}${path}`, {
       headers: { Cookie: cookieHeader },
       cache: 'no-store',
+      signal: AbortSignal.timeout(5_000),
     })
     if (!res.ok) return null
     return res.json() as Promise<T>
