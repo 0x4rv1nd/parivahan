@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "npx tsx api-server.ts",
     "start": "NODE_ENV=production npx tsx api-server.ts",
-    "dev:combined": "npx tsx server.ts",
-    "start:combined": "NODE_ENV=production npx tsx server.ts",
+    "build": "npx tsc --noEmit",
     "seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
@@ -18,8 +17,7 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "mongoose": "^9.9.3",
-    "next": "14.2.29"
+    "mongoose": "^9.9.3"
   },
   "devDependencies": {
     "@types/node": "^22",
