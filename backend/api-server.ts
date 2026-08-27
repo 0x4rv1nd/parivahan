@@ -620,7 +620,7 @@ async function start() {
     } catch { console.warn('  ⚠ Seed failed — continuing without mock data') }
   }
 
-  createServer(app).listen(API_PORT, () => {
+  createServer(app).listen(API_PORT, '0.0.0.0', () => {
     console.log(`\n  ✅  Backend API → http://localhost:${API_PORT}`)
     console.log(`  🌐  CORS origin → ${FRONTEND_URL}`)
     console.log(`  📦  MongoDB     → ${process.env.MONGODB_URI || 'mongodb://localhost:27017/parivahan-rto'}`)
