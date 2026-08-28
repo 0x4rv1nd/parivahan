@@ -2,7 +2,7 @@
 // Forwards the browser's cookies so the backend can authenticate the request.
 import { cookies } from 'next/headers'
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000'
+const BACKEND_URL = process.env.BACKEND_URL || process.env.API_URL || 'http://localhost:4000'
 
 export async function backendFetch<T = unknown>(path: string): Promise<T | null> {
   const cookieStore = cookies()
