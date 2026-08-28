@@ -20,6 +20,6 @@ services:
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_MODEL
-        value: z-ai/glm-5.3-flash
+        value: nvidia/nemotron-3-ultra-550b-a55b:free
       - key: MONGODB_URI
         sync: false
