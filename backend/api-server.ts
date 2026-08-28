@@ -11,6 +11,10 @@
  *
  * Development (combined, easier):
  *   npx tsx backend/server.ts                      (both, port 3000)
+ *
+ * Production (Render):
+ *   Requires env: MONGODB_URI, FRONTEND_URL, SESSION_SECRET.
+ *   No in-memory fallback / auto-seed — real MongoDB only.
  */
 
 // ── Load .env.local without dotenv dependency ─────────────────────────────────
@@ -99,6 +103,10 @@ type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string; rea
 
 const app = express()
 
+// Behind a reverse proxy (Render/Caddy), req.protocol/req.secure must trust the
+// proxy's X-Forwarded-Proto so secure cookies + sessions work over HTTPS.
+app.set('trust proxy', 1)
+
 // CORS — allow the Next.js frontend (any localhost port in dev, exact FRONTEND_URL in prod)
 const corsOrigin = process.env.NODE_ENV === 'production'
   ? FRONTEND_URL
@@ -126,6 +134,10 @@ app.use(express.urlencoded({ extended: true }))
 // ── Health check ──────────────────────────────────────────────────────────────
 
 const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'] as const
+
+function redactMongoUri(uri: string) {
+  return uri.replace(/(\/\/[^:@/]+:)[^@]+@/, '$1***@')
+}
 
 function healthPayload() {
   const dbState = mongoose.connection.readyState as number
@@ -625,13 +637,25 @@ app.get('/api/admin/dashboard', async (req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 async function start() {
-  // If no MONGODB_URI is provided (local dev, or hosted demo on Render without a DB),
-  // spin up an in-memory MongoDB and seed mock data so the demo runs with zero config.
-  if (!process.env.MONGODB_URI) {
+  const isProd = process.env.NODE_ENV === 'production'
+
+  if (isProd) {
+    const required = ['MONGODB_URI', 'FRONTEND_URL', 'SESSION_SECRET', 'OPENROUTER_API_KEY']
+    const missing = required.filter(k => !process.env[k])
+    if (missing.length) {
+      console.error(`❌ Missing required environment variables in production: ${missing.join(', ')}`)
+      console.error('   Configure them in Render → Environment, then redeploy.')
+      process.exit(1)
+    }
+  }
+
+  // Dev/sandbox only: if no MONGODB_URI, spin up an in-memory MongoDB + seed.
+  // Production NEVER falls back — memory servers don't scale and vanish on restart.
+  if (!process.env.MONGODB_URI && !isProd) {
     const { MongoMemoryServer } = await import('mongodb-memory-server')
     const mongod = await MongoMemoryServer.create()
     process.env.MONGODB_URI = mongod.getUri('parivahan-rto')
-    console.log('  ⚡ In-memory MongoDB ready')
+    console.log('  ⚡ In-memory MongoDB ready (dev mode)')
     try {
       console.log('  ⚡ Seeding mock data…')
       execSync(`npx tsx ${path.resolve(__dirname, 'scripts/seed.ts')}`, { env: { ...process.env }, stdio: 'inherit' })
@@ -645,9 +669,9 @@ async function start() {
     .catch((err: unknown) => console.warn('  ⚠  MongoDB connect failed — degraded mode:', err))
 
   createServer(app).listen(API_PORT, '0.0.0.0', () => {
-    console.log(`\n  ✅  Backend API → http://localhost:${API_PORT}`)
+    console.log(`\n  ✅  Backend API → http://0.0.0.0:${API_PORT}`)
     console.log(`  🌐  CORS origin → ${FRONTEND_URL}`)
-    console.log(`  📦  MongoDB     → ${process.env.MONGODB_URI || 'mongodb://localhost:27017/parivahan-rto'}`)
+    console.log(`  📦  MongoDB     → ${redactMongoUri(process.env.MONGODB_URI || 'mongodb://localhost:27017/parivahan-rto')}`)
     if (!process.env.OPENROUTER_API_KEY) console.log('  ⚠   OPENROUTER_API_KEY not set — AI runs in fallback FAQ mode')
     console.log()
   })
