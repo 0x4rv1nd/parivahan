@@ -28,6 +28,7 @@ try {
 } catch { /* .env.local absent — rely on real environment variables */ }
 
 import express from 'express'
+import mongoose from 'mongoose'
 import session from 'express-session'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -124,7 +125,24 @@ app.use(express.urlencoded({ extended: true }))
 
 // ── Health check ──────────────────────────────────────────────────────────────
 
-app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'parivahan-api' }))
+const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'] as const
+
+function healthPayload() {
+  const dbState = mongoose.connection.readyState as number
+  const states: readonly string[] = DB_STATES
+  return {
+    status: dbState === 1 ? 'ok' : 'degraded',
+    database: states[dbState] ?? 'unknown',
+    service: 'parivahan-api',
+    version: '1.0.0',
+    uptime: Math.round(process.uptime()),
+    memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    timestamp: new Date().toISOString(),
+  }
+}
+
+app.get('/health', (_req, res) => res.json(healthPayload()))
+app.get('/api/health', (_req, res) => res.json(healthPayload()))
 
 // ── Auth: Username / Password ─────────────────────────────────────────────────
 
@@ -619,6 +637,12 @@ async function start() {
       execSync(`npx tsx ${path.resolve(__dirname, 'scripts/seed.ts')}`, { env: { ...process.env }, stdio: 'inherit' })
     } catch { console.warn('  ⚠ Seed failed — continuing without mock data') }
   }
+
+  // Ensure the parent process is connected to the DB before the port opens,
+  // so /health reports the true state immediately.
+  await connectDb()
+    .then(() => console.log('  ✅  MongoDB connection ready'))
+    .catch((err: unknown) => console.warn('  ⚠  MongoDB connect failed — degraded mode:', err))
 
   createServer(app).listen(API_PORT, '0.0.0.0', () => {
     console.log(`\n  ✅  Backend API → http://localhost:${API_PORT}`)
