@@ -652,6 +652,7 @@ async function start() {
   // Dev/sandbox only: if no MONGODB_URI, spin up an in-memory MongoDB + seed.
   // Production NEVER falls back — memory servers don't scale and vanish on restart.
   if (!process.env.MONGODB_URI && !isProd) {
+    // @ts-ignore
     const { MongoMemoryServer } = await import('mongodb-memory-server')
     const mongod = await MongoMemoryServer.create()
     process.env.MONGODB_URI = mongod.getUri('parivahan-rto')

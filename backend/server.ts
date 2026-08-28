@@ -93,6 +93,7 @@ function redirectAfterLogin(user: MockUser, redirectTo?: string): string {
 nextApp.prepare().then(async () => {
   // In dev: auto-start in-memory MongoDB — no local MongoDB install required
   if (dev) {
+    // @ts-ignore
     const { MongoMemoryServer } = await import('mongodb-memory-server')
     const mongod = await MongoMemoryServer.create()
     process.env.MONGODB_URI = mongod.getUri('parivahan-rto')
